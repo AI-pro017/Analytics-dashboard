@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loadAndProcessData, ProcessedData, convertStatusDistribution, convertUserActivity } from '@/lib/dataProcessor';
@@ -12,9 +13,9 @@ import FinancialSummaryChart from '@/components/FinancialSummaryChart';
 import WeeklyUsageChart from '@/components/WeeklyUsageChart';
 import DashboardFilters from '@/components/DashboardFilters';
 import InsightCards from '@/components/InsightCards';
-import { BarChart3, Loader2, Download } from 'lucide-react';
+import { BarChart3, Loader2 } from 'lucide-react';
 
-export default function Dashboard() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -296,7 +297,7 @@ export default function Dashboard() {
             acc[user.username] = user.task_count;
             return acc;
           }, {} as Record<string, number>)}
-        />image.png
+        />
       </main>
 
       {/* Footer */}
@@ -336,5 +337,36 @@ export default function Dashboard() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Loading fallback component
+function DashboardFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-xl opacity-30"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-12">
+            <div className="flex items-center justify-center mb-6">
+              <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl">
+                <Loader2 className="h-12 w-12 animate-spin text-white" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading Dashboard</h2>
+            <p className="text-gray-600 mb-4">Initializing...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component wrapped with Suspense
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<DashboardFallback />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

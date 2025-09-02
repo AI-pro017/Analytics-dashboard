@@ -32,7 +32,7 @@ export async function loadAndProcessData(): Promise<ProcessedData> {
       apiClient.getExecutionTimeTrends(30),
       apiClient.getStatusDistribution(),
       apiClient.getUserActivity(),
-      apiClient.getFinancialSummary()
+      apiClient.getFinancialData()
     ]);
 
     return {
