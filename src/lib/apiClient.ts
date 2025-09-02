@@ -88,6 +88,7 @@ class ApiClient {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',  // This is needed for ngrok
         ...options?.headers,
       },
     });
