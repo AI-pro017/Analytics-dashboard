@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://46.62.174.190:8000/api';
+const API_BASE_URL = 'https://de3f955f40ea.ngrok-free.app/api';
 
 export interface DashboardOverview {
   total_tasks: number;
