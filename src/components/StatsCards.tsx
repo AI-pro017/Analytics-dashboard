@@ -1,10 +1,9 @@
 'use client';
 
-import { TaskData } from '@/lib/dataProcessor';
 import { Clock, CheckCircle, Users, TrendingUp } from 'lucide-react';
 
 interface StatsCardsProps {
-  tasks: TaskData[];
+  totalTasks: number;
   executionTimeStats: {
     average: number;
     min: number;
@@ -16,12 +15,11 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ 
-  tasks, 
+  totalTasks, 
   executionTimeStats, 
   statusDistribution, 
   userActivity 
 }: StatsCardsProps) {
-  const totalTasks = tasks.length;
   const completedTasks = statusDistribution['COMPLETED'] || 0;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   const uniqueUsers = Object.keys(userActivity).length;
@@ -81,10 +79,10 @@ export default function StatsCards({
 
         
         return (
-          <div key={index} className="group relative">
+          <div key={index} className="group relative h-full">
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center justify-between">
+            <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
+              <div className="flex items-center justify-between flex-grow">
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{stat.title}</p>
                   <p className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mt-2">

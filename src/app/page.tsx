@@ -1,25 +1,66 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { loadAndProcessData, ProcessedData } from '@/lib/dataProcessor';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { loadAndProcessData, ProcessedData, convertStatusDistribution, convertUserActivity } from '@/lib/dataProcessor';
+import apiClient from '@/lib/apiClient';
 import StatsCards from '@/components/StatsCards';
 import ExecutionTimeChart from '@/components/ExecutionTimeChart';
 import StatusDistributionChart from '@/components/StatusDistributionChart';
 import UserActivityChart from '@/components/UserActivityChart';
 import FinancialSummaryChart from '@/components/FinancialSummaryChart';
-import { BarChart3, Loader2 } from 'lucide-react';
+import WeeklyUsageChart from '@/components/WeeklyUsageChart';
+import DashboardFilters from '@/components/DashboardFilters';
+import InsightCards from '@/components/InsightCards';
+import { BarChart3, Loader2, Download } from 'lucide-react';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [data, setData] = useState<ProcessedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterOptions, setFilterOptions] = useState<{usernames: string[], statuses: string[]}>({
+    usernames: [],
+    statuses: []
+  });
+  // Initialize filters from URL parameters
+  const [currentFilters, setCurrentFilters] = useState<{
+    start_date?: string;
+    end_date?: string;
+    username?: string;
+    status?: string;
+    min_execution_time?: number;
+    max_execution_time?: number;
+  }>(() => {
+    return {
+      start_date: searchParams.get('start_date') || undefined,
+      end_date: searchParams.get('end_date') || undefined,
+      username: searchParams.get('username') || undefined,
+      status: searchParams.get('status') || undefined,
+      min_execution_time: searchParams.get('min_execution_time') ? Number(searchParams.get('min_execution_time')) : undefined,
+      max_execution_time: searchParams.get('max_execution_time') ? Number(searchParams.get('max_execution_time')) : undefined,
+    };
+  });
 
+  // Load data with initial filters on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const processedData = await loadAndProcessData();
-        setData(processedData);
+        const [overview, weeklyUsage, executionTimeTrends, statusDistribution, userActivity, financialData, options] = await Promise.all([
+          apiClient.getDashboardOverview(currentFilters),
+          apiClient.getWeeklyUsage(12, currentFilters),
+          apiClient.getExecutionTimeTrends(30, currentFilters),
+          apiClient.getStatusDistribution(currentFilters),
+          apiClient.getUserActivity(currentFilters),
+          apiClient.getFinancialData(currentFilters),
+          apiClient.getFilterOptions()
+        ]);
+        
+        setData({ overview, weeklyUsage, executionTimeTrends, statusDistribution, userActivity, financialData });
+        setFilterOptions(options);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
@@ -28,7 +69,57 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, []);
+  }, []); // Only run on mount, not when currentFilters changes
+
+  const handleFiltersChange = async (filters: {
+    start_date?: string;
+    end_date?: string;
+    username?: string;
+    status?: string;
+    min_execution_time?: number;
+    max_execution_time?: number;
+  }) => {
+    try {
+      setLoading(true);
+      setCurrentFilters(filters);
+      
+      // Update URL with filter parameters
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value.toString());
+        }
+      });
+      
+      const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+      router.replace(newUrl, { scroll: false });
+      
+      // Load filtered data...
+      const [overview, weeklyUsage, executionTimeTrends, statusDistribution, userActivity, financialData] = await Promise.all([
+        apiClient.getDashboardOverview(filters),
+        apiClient.getWeeklyUsage(12, filters),
+        apiClient.getExecutionTimeTrends(30, filters),
+        apiClient.getStatusDistribution(filters),
+        apiClient.getUserActivity(filters),
+        apiClient.getFinancialData(filters)
+      ]);
+
+      setData({ overview, weeklyUsage, executionTimeTrends, statusDistribution, userActivity, financialData });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply filters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const exportUrl = `${apiClient.baseUrl}/export/csv`;
+      window.open(exportUrl, '_blank');
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -125,7 +216,7 @@ export default function Dashboard() {
             </div>
             <div className="text-right">
               <div className="text-sm font-medium text-gray-700">Last updated</div>
-              <div className="text-sm text-gray-500">{new Date().toLocaleString()}</div>
+              <div className="text-sm text-gray-500">{data.overview.last_updated ? new Date(data.overview.last_updated).toLocaleString() : 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -133,26 +224,56 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <StatsCards
-          tasks={data.tasks}
-          executionTimeStats={data.executionTimeStats}
-          statusDistribution={data.statusDistribution}
-          userActivity={data.userActivity}
+        {/* Filters */}
+        <DashboardFilters
+          onFiltersChange={handleFiltersChange}
+          onExport={handleExport}
+          usernames={filterOptions.usernames}
+          statuses={filterOptions.statuses}
+          initialFilters={currentFilters}  // Add this prop
         />
+
+        {/* Stats Cards - Performance Insights, Task Distribution, Top Users */}
+        <StatsCards 
+          totalTasks={data.overview.total_tasks} 
+          executionTimeStats={{
+            average: data.overview.avg_execution_time,
+            min: data.overview.min_execution_time,
+            max: data.overview.max_execution_time,
+            median: data.overview.avg_execution_time // Use avg as median approximation
+          }}
+          statusDistribution={data.statusDistribution.reduce((acc, item) => {
+            acc[item.status] = item.count;
+            return acc;
+          }, {} as Record<string, number>)}
+          userActivity={data.userActivity.reduce((acc, user) => {
+            acc[user.username] = user.task_count;
+            return acc;
+          }, {} as Record<string, number>)}
+        />
+
+        
+
+        {/* Weekly Usage Chart */}
+        <div className="mb-8">
+          <WeeklyUsageChart data={data.weeklyUsage} width={1200} height={400} />
+        </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Execution Time Chart */}
-          <ExecutionTimeChart data={data.tasks} width={600} height={400} />
+          {/* Execution Time Trends */}
+          <ExecutionTimeChart 
+            data={data.executionTimeTrends} 
+            height={400}
+          />
           
           {/* Status Distribution Chart */}
-          <StatusDistributionChart data={data.statusDistribution} width={500} height={400} />
+          <StatusDistributionChart data={convertStatusDistribution(data.statusDistribution)} width={500} height={400} />
         </div>
 
         {/* User Activity Chart */}
         <div className="mb-8">
-          <UserActivityChart data={data.userActivity} width={900} height={400} />
+          <UserActivityChart data={convertUserActivity(data.userActivity)} width={900} height={400} />
         </div>
 
         {/* Financial Summary Chart */}
@@ -160,94 +281,22 @@ export default function Dashboard() {
           <FinancialSummaryChart data={data.financialData} width={1000} height={500} />
         </div>
 
-        {/* Additional Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 hover:shadow-2xl transition-all duration-300">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800">Performance Insights</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Fastest Task</span>
-                <span className="font-bold text-emerald-600 text-lg">{data.executionTimeStats.min.toFixed(2)}s</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Slowest Task</span>
-                <span className="font-bold text-orange-600 text-lg">{data.executionTimeStats.max.toFixed(2)}s</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Median Time</span>
-                <span className="font-bold text-blue-600 text-lg">{data.executionTimeStats.median.toFixed(2)}s</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 hover:shadow-2xl transition-all duration-300">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800">Task Distribution</h3>
-            </div>
-            <div className="space-y-3">
-              {Object.entries(data.statusDistribution).map(([status, count], index) => {
-                const colors = [
-                  'from-emerald-50 to-green-50 text-emerald-600',
-                  'from-blue-50 to-indigo-50 text-blue-600',
-                  'from-orange-50 to-yellow-50 text-orange-600',
-                  'from-purple-50 to-pink-50 text-purple-600',
-                  'from-red-50 to-rose-50 text-red-600'
-                ];
-                const colorClass = colors[index % colors.length];
-                return (
-                  <div key={status} className={`flex justify-between items-center p-3 bg-gradient-to-r ${colorClass} rounded-lg`}>
-                    <span className="font-medium">{status}</span>
-                    <span className="font-bold text-lg">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 hover:shadow-2xl transition-all duration-300">
-            <div className="flex items-center mb-6">
-              <div className="p-3 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-xl mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800">Top Users</h3>
-            </div>
-            <div className="space-y-3">
-              {Object.entries(data.userActivity)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
-                .map(([user, count], index) => {
-                  const colors = [
-                    'from-yellow-50 to-amber-50 text-yellow-600',
-                    'from-blue-50 to-cyan-50 text-blue-600',
-                    'from-green-50 to-emerald-50 text-green-600',
-                    'from-purple-50 to-violet-50 text-purple-600',
-                    'from-pink-50 to-rose-50 text-pink-600'
-                  ];
-                  const colorClass = colors[index % colors.length];
-                  return (
-                    <div key={user} className={`flex justify-between items-center p-3 bg-gradient-to-r ${colorClass} rounded-lg`}>
-                      <span className="font-medium">{user}</span>
-                      <span className="font-bold text-lg">{count}</span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
+        {/* Insight Cards */}
+        <InsightCards 
+          executionTimeStats={{
+            min: data.overview.min_execution_time,
+            max: data.overview.max_execution_time,
+            median: data.overview.avg_execution_time
+          }}
+          statusDistribution={data.statusDistribution.reduce((acc, item) => {
+            acc[item.status] = item.count;
+            return acc;
+          }, {} as Record<string, number>)}
+          userActivity={data.userActivity.reduce((acc, user) => {
+            acc[user.username] = user.task_count;
+            return acc;
+          }, {} as Record<string, number>)}
+        />image.png
       </main>
 
       {/* Footer */}
@@ -264,17 +313,17 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{data.tasks.length}</div>
+                <div className="text-2xl font-bold text-gray-800">{data.overview.total_tasks}</div>
                 <div className="text-xs text-gray-600">Total Tasks</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-emerald-600">
-                  {((data.statusDistribution['COMPLETED'] || 0) / data.tasks.length * 100).toFixed(1)}%
+                  {data.overview.completion_rate.toFixed(1)}%
                 </div>
                 <div className="text-xs text-gray-600">Success Rate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{Object.keys(data.userActivity).length}</div>
+                <div className="text-2xl font-bold text-blue-600">{data.overview.unique_users}</div>
                 <div className="text-xs text-gray-600">Active Users</div>
               </div>
             </div>

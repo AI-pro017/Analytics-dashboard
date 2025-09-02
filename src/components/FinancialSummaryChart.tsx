@@ -11,7 +11,12 @@ interface FinancialData {
 }
 
 interface FinancialSummaryChartProps {
-  data: FinancialData;
+  data: {
+    rx_summary: Array<{year: string, channel: string, value: number}>;
+    rebates_summary: Array<{year: string, channel: string, value: number}>;
+    wac_summary: Array<{year: string, channel: string, value: number}>;
+    brand_estimates: Array<{year: string, channel: string, value: number}>;
+  };
   width?: number;
   height?: number;
 }
@@ -37,16 +42,16 @@ export default function FinancialSummaryChart({ data, width = 600, height = 400 
     
     switch (selectedChart) {
       case 'rx':
-        currentData = data.rxSummary;
+        currentData = data.rx_summary;
         break;
       case 'rebates':
-        currentData = data.rebatesSummary;
+        currentData = data.rebates_summary;
         break;
       case 'wac':
-        currentData = data.wacSummary;
+        currentData = data.wac_summary;
         break;
       case 'brand':
-        currentData = data.brandEstimates;
+        currentData = data.brand_estimates;
         break;
     }
 
@@ -196,14 +201,22 @@ export default function FinancialSummaryChart({ data, width = 600, height = 400 
           .style('pointer-events', 'none')
           .style('z-index', '1000');
 
+        // Get the parent group's key (channel name)
+        const parentGroup = d3.select(this.parentNode as SVGGElement);
+        const channel = parentGroup.datum() as d3.Series<{[key: string]: number}, string>;
+        const channelName = channel.key;
+        
+        // Get the data point index to find the year
+        const bars = d3.select(this.parentNode as SVGGElement).selectAll('.bar');
+        const barIndex = bars.nodes().indexOf(this);
+        const year = years[barIndex];
+        
+        // Calculate the actual value for this segment
         const value = d[1] - d[0];
-        const yearIndex = Math.floor((event.target as Element & {__data__: {index: number}}).__data__.index / channels.length);
-        const year = years[yearIndex];
-        const channel = (d as d3.SeriesPoint<{[key: string]: number}> & {key: string}).key;
         
         tooltip.html(`
           <div><strong>${year}</strong></div>
-          <div>Channel: ${channel}</div>
+          <div>Channel: ${channelName || 'undefined'}</div>
           <div>Value: $${value.toLocaleString()}</div>
         `)
         .style('left', (event.pageX + 10) + 'px')
