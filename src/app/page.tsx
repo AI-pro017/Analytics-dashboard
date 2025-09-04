@@ -300,39 +300,112 @@ function DashboardContent() {
         />
       </main>
 
-      {/* Footer */}
-      <footer className="mt-16 bg-white/50 backdrop-blur-sm border-t border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mr-3">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">Analytics Dashboard</h3>
-              </div>
-            </div>
-            <div className="flex items-center space-x-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-800">{data.overview.total_tasks}</div>
-                <div className="text-xs text-gray-600">Total Tasks</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">
-                  {data.overview.completion_rate.toFixed(1)}%
+      {/* Enhanced Footer */}
+      <footer className="mt-20 relative">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50/30 backdrop-blur-xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
+        
+        <div className="relative border-t border-gradient-to-r from-transparent via-gray-200/50 to-transparent">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {/* Main Footer Content */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-8">
+              {/* Brand Section */}
+              <div className="flex items-center group">
+                <div className="p-4 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-2xl mr-5 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  <BarChart3 className="h-8 w-8 text-white" />
                 </div>
-                <div className="text-xs text-gray-600">Success Rate</div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    Analytics Dashboard
+                  </h3>
+                  <p className="text-gray-600 mt-1">Powerful insights, beautiful visualizations</p>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{data.overview.unique_users}</div>
-                <div className="text-xs text-gray-600">Active Users</div>
+              
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="text-center group">
+                  <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 group-hover:shadow-xl transition-all duration-300">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      {data.overview.total_tasks.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Total Tasks</div>
+                    <div className="w-full bg-blue-100 rounded-full h-1 mt-3">
+                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-1 rounded-full w-full"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center group">
+                  <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 group-hover:shadow-xl transition-all duration-300">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                      {data.overview.completion_rate.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Success Rate</div>
+                    <div className="w-full bg-emerald-100 rounded-full h-1 mt-3">
+                      <div className="bg-gradient-to-r from-emerald-500 to-green-500 h-1 rounded-full" 
+                           style={{ width: `${data.overview.completion_rate}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center group col-span-2 lg:col-span-1">
+                  <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 group-hover:shadow-xl transition-all duration-300">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      {data.overview.unique_users}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium mt-1">Active Users</div>
+                    <div className="w-full bg-purple-100 rounded-full h-1 mt-3">
+                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-1 rounded-full w-3/4"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="mt-6 pt-6 border-t border-gray-200/50 text-center">
-            <p className="text-sm text-gray-500">
-              © 2025 Analytics Dashboard. Built with modern web technologies for optimal performance.
-            </p>
+            
+            {/* Divider */}
+            <div className="relative mb-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gradient-to-r from-transparent via-gray-300/50 to-transparent"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <div className="bg-white/80 backdrop-blur-sm px-6 py-2 rounded-full border border-gray-200/50 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bottom Section */}
+            <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+              <div className="mb-4 md:mb-0">
+                <p className="text-gray-600 font-medium">
+                  Built with <span className="text-red-500">❤️</span> using modern web technologies
+                </p>
+                <div className="flex items-center justify-center md:justify-start space-x-4 mt-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    React
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    FastAPI
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    D3.js
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    TypeScript
+                  </span>
+                </div>
+              </div>
+              <div className="text-sm text-gray-500">
+                <p>© 2025 Analytics Dashboard. All rights reserved.</p>
+                <p className="mt-1">Optimized for performance and accessibility.</p>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

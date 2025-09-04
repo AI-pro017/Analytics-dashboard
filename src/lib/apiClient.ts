@@ -21,8 +21,16 @@ export interface WeeklyUsage {
 
 export interface ExecutionTimeTrend {
   date: string;
-  avg_time: number;
-  task_count: number;
+  completed_avg_time: number;
+  failed_avg_time: number;
+  timeout_avg_time: number;
+  cancelled_avg_time: number;
+  completed_count: number;
+  failed_count: number;
+  timeout_count: number;
+  cancelled_count: number;
+  running_count: number;
+  total_count: number;
 }
 
 export interface StatusDistribution {
