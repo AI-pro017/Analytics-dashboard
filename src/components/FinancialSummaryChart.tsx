@@ -3,12 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-interface FinancialData {
-  rxSummary: Array<{year: string, channel: string, value: number}>;
-  rebatesSummary: Array<{year: string, channel: string, value: number}>;
-  wacSummary: Array<{year: string, channel: string, value: number}>;
-  brandEstimates: Array<{year: string, channel: string, value: number}>;
-}
 
 interface FinancialSummaryChartProps {
   data: {
@@ -124,7 +118,7 @@ export default function FinancialSummaryChart({ data, width = 800, height = 600 
 
     // Add gradient definitions
     const defs = svg.append('defs');
-    channels.forEach((channel, i) => {
+    channels.forEach((channel) => {
       const gradient = defs.append('linearGradient')
         .attr('id', `gradient-${channel}`)
         .attr('gradientUnits', 'userSpaceOnUse')

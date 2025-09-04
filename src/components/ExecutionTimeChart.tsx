@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 
 interface ExecutionTimeTrend {
@@ -21,6 +21,9 @@ interface ProcessedTrend extends Omit<ExecutionTimeTrend, 'date'> {
   date: Date;
 }
 
+type StatusKey = 'completed_avg_time' | 'failed_avg_time' | 'timeout_avg_time' | 'cancelled_avg_time';
+type CountKey = 'completed_count' | 'failed_count' | 'timeout_count' | 'cancelled_count' | 'running_count';
+
 interface ExecutionTimeChartProps {
   data: ExecutionTimeTrend[];
   width?: number;
@@ -36,13 +39,13 @@ export default function ExecutionTimeChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('COMPLETED');
 
-  // Status configuration
-  const statusConfig = {
+  // Status configuration - memoized to prevent useEffect dependency changes
+  const statusConfig = useMemo(() => ({
     'COMPLETED': { color: '#10b981', key: 'completed_avg_time', countKey: 'completed_count', label: 'Completed Tasks' },
     'FAILED': { color: '#ef4444', key: 'failed_avg_time', countKey: 'failed_count', label: 'Failed Tasks' },
     'TIMEOUT': { color: '#f59e0b', key: 'timeout_avg_time', countKey: 'timeout_count', label: 'Timeout Tasks' },
     'CANCELLED': { color: '#6b7280', key: 'cancelled_avg_time', countKey: 'cancelled_count', label: 'Cancelled Tasks' }
-  };
+  }), []);
 
   useEffect(() => {
     if (!data || data.length === 0 || !svgRef.current || !containerRef.current) return;
@@ -79,14 +82,14 @@ export default function ExecutionTimeChart({
     const { color, key, countKey } = currentConfig;
 
     // Filter data for selected status
-    const relevantData = processedData.filter(d => (d as any)[countKey] > 0);
+    const relevantData = processedData.filter(d => d[countKey as CountKey] > 0);
     
     // Scales
     const xScale = d3.scaleTime()
       .domain(d3.extent(processedData, d => d.date) as [Date, Date])
       .range([0, chartWidth]);
 
-    const maxTime = d3.max(relevantData, d => (d as any)[key]) || 100;
+    const maxTime = d3.max(relevantData, d => d[key as StatusKey]) || 100;
     const yScale = d3.scaleLinear()
       .domain([0, maxTime * 1.1])
       .range([chartHeight, 0]);
@@ -140,13 +143,13 @@ export default function ExecutionTimeChart({
       const area = d3.area<ProcessedTrend>()
         .x(d => xScale(d.date))
         .y0(chartHeight)
-        .y1(d => yScale((d as any)[key]))
+        .y1(d => yScale(d[key as StatusKey]))
         .curve(d3.curveMonotoneX);
 
       // Create line generator
       const line = d3.line<ProcessedTrend>()
         .x(d => xScale(d.date))
-        .y(d => yScale((d as any)[key]))
+        .y(d => yScale(d[key as StatusKey]))
         .curve(d3.curveMonotoneX);
 
       // Add gradient for area fill
@@ -199,7 +202,7 @@ export default function ExecutionTimeChart({
         .enter().append("circle")
         .attr("class", "data-point")
         .attr("cx", d => xScale(d.date))
-        .attr("cy", d => yScale((d as any)[key]))
+        .attr("cy", d => yScale(d[key as StatusKey]))
         .attr("r", 0)
         .attr("fill", "#ffffff")
         .attr("stroke", color)
@@ -232,10 +235,10 @@ export default function ExecutionTimeChart({
               📅 ${d.date.toLocaleDateString()}
             </div>
             <div style="margin-bottom: 4px;">
-              ⏱️ Avg Time: ${((d as any)[key] as number).toFixed(2)}s
+              ⏱️ Avg Time: ${d[key as StatusKey].toFixed(2)}s
             </div>
             <div style="margin-bottom: 4px;">
-              📊 Count: ${(d as any)[countKey]}
+              📊 Count: ${d[countKey as CountKey]}
             </div>
             <div>
               📈 Total Tasks: ${d.total_count}
@@ -309,7 +312,7 @@ export default function ExecutionTimeChart({
         .on("mouseout", () => d3.selectAll('.tooltip').remove());
     }
 
-  }, [data, selectedStatus, width, height]);
+  }, [data, selectedStatus, width, height, statusConfig]);
 
   return (
     <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl transition-all duration-500 hover:-translate-y-1">
@@ -368,9 +371,9 @@ export default function ExecutionTimeChart({
       <div className="mt-8">
         <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
           {Object.entries(statusConfig).map(([status, config]) => {
-            const totalCount = data.reduce((sum, d) => sum + (d as any)[config.countKey], 0);
+            const totalCount = data.reduce((sum, d) => sum + d[config.countKey as CountKey], 0);
             const avgTime = data.length > 0 
-              ? data.reduce((sum, d) => sum + (d as any)[config.key], 0) / data.filter(d => (d as any)[config.countKey] > 0).length || 0
+              ? data.reduce((sum, d) => sum + d[config.key as StatusKey], 0) / data.filter(d => d[config.countKey as CountKey] > 0).length || 0
               : 0;
 
             return (

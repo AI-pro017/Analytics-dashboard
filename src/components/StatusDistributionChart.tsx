@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 
 interface StatusDistributionChartProps {
@@ -15,14 +15,14 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'percentage' | 'count'>('percentage');
 
-  // Status configuration matching ExecutionTimeChart
-  const statusConfig = {
+  // Status configuration matching ExecutionTimeChart - memoized to prevent useEffect dependency changes
+  const statusConfig = useMemo(() => ({
     'COMPLETED': { color: '#10b981', icon: '✓' },
     'FAILED': { color: '#ef4444', icon: '✗' },
     'TIMEOUT': { color: '#f59e0b', icon: '⏱' },
     'CANCELLED': { color: '#6b7280', icon: '⊘' },
     'RUNNING': { color: '#8b5cf6', icon: '⟳' }
-  };
+  }), []);
 
   useEffect(() => {
     if (!Object.keys(data).length || !svgRef.current || !containerRef.current) return;
@@ -45,7 +45,7 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
     // Prepare data for pie chart
     const total = Object.values(data).reduce((sum, val) => sum + val, 0);
     const pieData = Object.entries(data)
-      .filter(([_, count]) => count > 0)
+      .filter(([, count]) => count > 0)
       .map(([status, count]) => ({
         status,
         count,
@@ -110,7 +110,7 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
         d3.select(this)
           .transition()
           .duration(200)
-          .attr('d', d => hoverArc(d as any));
+          .attr('d', (d) => hoverArc(d as d3.PieArcDatum<typeof pieData[0]>) || '');
         
         setSelectedStatus(d.data.status);
 
@@ -142,11 +142,11 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
         .duration(200)
         .style('opacity', 1);
       })
-      .on('mouseout', function(event, d) {
+      .on('mouseout', function() {
         d3.select(this)
           .transition()
           .duration(200)
-          .attr('d', d => arc(d as any));
+          .attr('d', (d) => arc(d as d3.PieArcDatum<typeof pieData[0]>) || '');
         
         setSelectedStatus(null);
         d3.selectAll('.tooltip').remove();
@@ -200,12 +200,10 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
       .delay((d, i) => i * 100)
       .attr('opacity', 1);
 
-  }, [data, width, height, selectedStatus]);
+  }, [data, width, height, selectedStatus, statusConfig]);
 
   // Calculate statistics
   const total = Object.values(data).reduce((sum, val) => sum + val, 0);
-  const completionRate = total > 0 ? ((data.COMPLETED || 0) / total * 100) : 0;
-  const failureRate = total > 0 ? (((data.FAILED || 0) + (data.TIMEOUT || 0)) / total * 100) : 0;
 
   return (
     <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 p-8 hover:shadow-3xl transition-all duration-500 hover:-translate-y-1">
@@ -259,7 +257,7 @@ export default function StatusDistributionChart({ data, width = 400, height = 40
       {/* Status Legend - Compact Layout */}
       <div className="grid grid-cols-2 gap-2 mt-4">
         {Object.entries(data)
-          .filter(([_, count]) => count > 0)
+          .filter(([, count]) => count > 0)
           .sort(([,a], [,b]) => b - a)
           .map(([status, count]) => {
             const config = statusConfig[status as keyof typeof statusConfig];

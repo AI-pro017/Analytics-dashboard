@@ -237,7 +237,6 @@ export default function UserActivityChart({ data, width = 900, height = 350 }: U
       if (containerRef.current) {
         const newRect = containerRef.current.getBoundingClientRect();
         const newWidth = newRect.width;
-        const newHeight = Math.min(400, Math.max(300, newWidth * 0.4));
         
         if (Math.abs(newWidth - actualWidth) > 10) {
           // Redraw chart with new dimensions

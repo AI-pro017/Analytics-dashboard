@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { loadAndProcessData, ProcessedData, convertStatusDistribution, convertUserActivity } from '@/lib/dataProcessor';
+import { convertStatusDistribution, convertUserActivity, ProcessedData } from '@/lib/dataProcessor';
 import apiClient from '@/lib/apiClient';
 import StatsCards from '@/components/StatsCards';
 import ExecutionTimeChart from '@/components/ExecutionTimeChart';
@@ -70,6 +70,7 @@ function DashboardContent() {
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount, not when currentFilters changes
 
   const handleFiltersChange = async (filters: {
@@ -243,11 +244,11 @@ function DashboardContent() {
             max: data.overview.max_execution_time,
             median: data.overview.avg_execution_time // Use avg as median approximation
           }}
-          statusDistribution={data.statusDistribution.reduce((acc, item) => {
+          statusDistribution={data.statusDistribution.reduce((acc: Record<string, number>, item: {status: string, count: number}) => {
             acc[item.status] = item.count;
             return acc;
           }, {} as Record<string, number>)}
-          userActivity={data.userActivity.reduce((acc, user) => {
+          userActivity={data.userActivity.reduce((acc: Record<string, number>, user: {username: string, task_count: number}) => {
             acc[user.username] = user.task_count;
             return acc;
           }, {} as Record<string, number>)}
@@ -289,11 +290,11 @@ function DashboardContent() {
             max: data.overview.max_execution_time,
             median: data.overview.avg_execution_time
           }}
-          statusDistribution={data.statusDistribution.reduce((acc, item) => {
+          statusDistribution={data.statusDistribution.reduce((acc: Record<string, number>, item: {status: string, count: number}) => {
             acc[item.status] = item.count;
             return acc;
           }, {} as Record<string, number>)}
-          userActivity={data.userActivity.reduce((acc, user) => {
+          userActivity={data.userActivity.reduce((acc: Record<string, number>, user: {username: string, task_count: number}) => {
             acc[user.username] = user.task_count;
             return acc;
           }, {} as Record<string, number>)}

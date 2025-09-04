@@ -26,7 +26,6 @@ export default function InsightCards({
   const totalTasks = Object.values(statusDistribution).reduce((sum, count) => sum + count, 0);
   const completedTasks = statusDistribution['COMPLETED'] || 0;
   const failedTasks = statusDistribution['FAILED'] || 0;
-  const runningTasks = statusDistribution['RUNNING'] || 0;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
