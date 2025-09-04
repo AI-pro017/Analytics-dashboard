@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { ChevronDown } from 'lucide-react';
 
 interface UserActivityChartProps {
   data: Record<string, number>;
@@ -12,6 +13,21 @@ interface UserActivityChartProps {
 export default function UserActivityChart({ data, width = 900, height = 350 }: UserActivityChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [topUsersLimit, setTopUsersLimit] = useState(20);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!Object.keys(data).length || !svgRef.current || !containerRef.current) return;
@@ -32,10 +48,11 @@ export default function UserActivityChart({ data, width = 900, height = 350 }: U
     // Update SVG dimensions
     svg.attr('width', actualWidth).attr('height', actualHeight);
 
-    // Prepare data
+    // Prepare data - filter by top users limit
     const userData = Object.entries(data)
       .map(([username, count]) => ({ username, count }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count)
+      .slice(0, topUsersLimit); // Limit to top N users
 
     // Scales
     const xScale = d3.scaleBand()
@@ -238,7 +255,7 @@ export default function UserActivityChart({ data, width = 900, height = 350 }: U
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
 
-  }, [data, width, height]);
+  }, [data, width, height, topUsersLimit]);
 
   return (
     <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 hover:shadow-3xl transition-all duration-500 hover:-translate-y-1">
@@ -258,6 +275,39 @@ export default function UserActivityChart({ data, width = 900, height = 350 }: U
           </div>
         </div>
         
+        {/* Top Users Limit Dropdown */}
+        <div className="relative dropdown-container">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-50/80 hover:bg-white border border-gray-200/50 rounded-xl text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:shadow-md"
+          >
+            <span>Top {topUsersLimit} Users</span>
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-50">
+              <div className="py-2">
+                {[10, 20, 40, 80].map((limit) => (
+                  <button
+                    key={limit}
+                    onClick={() => {
+                      setTopUsersLimit(limit);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
+                      topUsersLimit === limit
+                        ? 'bg-blue-50 text-blue-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    Top {limit} Users
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Chart container that fills available space */}
