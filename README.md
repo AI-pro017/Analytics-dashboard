@@ -18,7 +18,11 @@ Live demo: https://analytics-dashboard-nine-topaz.vercel.app
 
 ## How it gets its data
 
-This repo is the frontend only. It reads everything from a REST API (originally a FastAPI app serving data from a CSV file), which isn't part of this repo. The base URL is set at the top of `src/lib/apiClient.ts` and currently points at an old ngrok tunnel, so change it to wherever your API runs.
+This repo is the frontend only. It reads everything from a REST API (originally a FastAPI app serving data from a CSV file), which isn't part of this repo. By default it expects the API at `http://localhost:8000/api`. To use a different address, set it in `.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-api.example.com/api
+```
 
 The frontend expects these endpoints, all accepting the same filter query parameters:
 

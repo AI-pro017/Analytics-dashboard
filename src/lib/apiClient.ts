@@ -1,4 +1,5 @@
-const API_BASE_URL = 'https://de3f955f40ea.ngrok-free.app/api';
+// Point this at your API with NEXT_PUBLIC_API_BASE_URL. Defaults to a FastAPI server running locally.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
 export interface DashboardOverview {
   total_tasks: number;
