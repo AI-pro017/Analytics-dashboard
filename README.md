@@ -1,196 +1,67 @@
-# Analytics Dashboard - React + FastAPI
+# Analytics Dashboard
 
-A comprehensive data visualization dashboard built with React (Next.js) frontend and FastAPI backend, featuring D3.js charts for beautiful data visualization.
+A Next.js dashboard for tracking how a task processing system is being used: how many tasks run each week, how long they take, how many finish or fail, who's running them and what they cost.
 
-## 🚀 Features
+All the charts are drawn with D3, and everything can be filtered by date range, user, status and run time, with an export button that downloads the data as CSV.
 
-### Dashboard Metrics
-- **Weekly Usage Report** - Activity breakdown by week with trend analysis
-- **Total Usage** - Overall statistics across the entire dataset
-- **Run Time Trends** - Time series analysis of task execution times
-- **Progress & Completion** - Task status distribution and completion rates
+Live demo: https://analytics-dashboard-nine-topaz.vercel.app
 
-### Advanced Features
-- **Filters** - Date range, username, status, and execution time filtering
-- **Export** - CSV download functionality for filtered data
-- **Drilldown** - Interactive charts with detailed tooltips
-- **Responsive Design** - Optimized for desktop and mobile devices
+## What's on the dashboard
 
-### Technical Features
-- **Modular Architecture** - Easy integration into existing React/FastAPI projects
-- **Real-time Data** - FastAPI backend serves live data from CSV
-- **Beautiful UI** - Modern design with glassmorphism effects
-- **Type Safety** - Full TypeScript implementation
+- Summary cards for total and completed tasks, completion rate, average, fastest and slowest run time, and number of users.
+- A weekly usage chart with task counts, average run time and completion rate per week.
+- Run time trends by day, split by status (completed, failed, timed out, cancelled).
+- A status breakdown chart.
+- A user activity chart showing who runs the most tasks.
+- A financial summary chart.
+- Insight cards with the fastest, slowest and median run times, the success rate and the most active users.
 
-## 🏗️ Project Structure
-Dashboard_React_Fastapi/
-├── backend/
-│ ├── main.py # FastAPI application
-│ ├── start.py # Development server
-│ ├── requirements.txt # Python dependencies
-│ └── sample.csv # Data source
-└── frontend/
-├── src/
-│ ├── app/
-│ │ └── page.tsx # Main dashboard page
-│ ├── components/ # React components
-│ │ ├── DashboardFilters.tsx
-│ │ ├── WeeklyUsageChart.tsx
-│ │ ├── ExecutionTimeChart.tsx
-│ │ ├── StatusDistributionChart.tsx
-│ │ ├── UserActivityChart.tsx
-│ │ ├── FinancialSummaryChart.tsx
-│ │ └── StatsCards.tsx
-│ └── lib/
-│ ├── apiClient.ts # API communication
-│ └── dataProcessor.ts # Data processing
-├── package.json
-└── ...
+## How it gets its data
 
+This repo is the frontend only. It reads everything from a REST API (originally a FastAPI app serving data from a CSV file), which isn't part of this repo. The base URL is set at the top of `src/lib/apiClient.ts` and currently points at an old ngrok tunnel, so change it to wherever your API runs.
 
-## 🔧 Installation & Setup
+The frontend expects these endpoints, all accepting the same filter query parameters:
 
-### Backend Setup
+| Endpoint | Returns |
+| --- | --- |
+| `/api/dashboard/overview` | Summary numbers |
+| `/api/dashboard/weekly-usage` | Per-week counts and averages |
+| `/api/dashboard/execution-time-trends` | Daily run times by status |
+| `/api/dashboard/status-distribution` | Count and share of each status |
+| `/api/dashboard/user-activity` | Tasks per user |
+| `/api/dashboard/financial-summary` | Data for the financial chart |
+| `/api/dashboard/individual-tasks` | Raw task rows |
+| `/api/dashboard/filtered-data` | Everything above in one call, for the current filters |
+| `/api/dashboard/filter-options` | Available usernames and statuses |
+| `/api/export/csv` | CSV download used by the Export button |
+| `/api/health` | Health check |
 
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
+The response shapes are defined as TypeScript interfaces in `src/lib/apiClient.ts`.
 
-2. **Install Python dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Running it
 
-3. **Start the FastAPI server**
-   ```bash
-   python start.py
-   ```
-   
-   The API will be available at `http://localhost:8000`
-
-### Frontend Setup
-
-1. **Navigate to frontend directory**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install Node.js dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-   
-   The dashboard will be available at `http://localhost:3000`
-
-## 📊 API Endpoints
-
-### Core Dashboard Data
-- `GET /api/dashboard/overview` - Overview statistics
-- `GET /api/dashboard/weekly-usage` - Weekly usage breakdown
-- `GET /api/dashboard/execution-time-trends` - Time series data
-- `GET /api/dashboard/status-distribution` - Task status distribution
-- `GET /api/dashboard/user-activity` - User activity summary
-- `GET /api/dashboard/financial-summary` - Financial data from CSV
-
-### Filtering & Export
-- `GET /api/dashboard/filtered-data` - Apply filters to data
-- `GET /api/export/csv` - Export filtered data as CSV
-- `GET /api/dashboard/filter-options` - Available filter options
-
-### Utility
-- `GET /api/health` - Health check
-- `GET /` - API status
-
-## 🎨 Component Architecture
-
-### Modular Components
-- **DashboardFilters** - Advanced filtering with date ranges, users, status
-- **WeeklyUsageChart** - Dual-axis chart showing task count and execution time
-- **ExecutionTimeChart** - Line chart for time series analysis
-- **StatusDistributionChart** - Pie chart for task status breakdown
-- **UserActivityChart** - Bar chart for user activity comparison
-- **FinancialSummaryChart** - Multi-series chart for financial data
-
-### Data Flow
-1. **API Client** - Handles all HTTP requests to FastAPI backend
-2. **Data Processor** - Transforms API responses for component consumption
-3. **Components** - Render D3.js visualizations with processed data
-
-## 🔄 Integration Guide
-
-This dashboard is designed for easy integration into existing React/FastAPI projects:
-
-### Backend Integration
-```python
-# Import the main app
-from main import app
-
-# Mount as sub-application
-main_app.mount("/dashboard", app)
+```bash
+git clone https://github.com/AI-pro017/Analytics-dashboard.git
+cd Analytics-dashboard
+npm install
+npm run dev
 ```
 
-### Frontend Integration
-```typescript
-// Import components
-import { WeeklyUsageChart, DashboardFilters } from './components';
+Then open http://localhost:3000.
 
-// Use in your existing React app
-<WeeklyUsageChart data={weeklyData} />
+## Tech stack
+
+- Next.js 15 (App Router) with React 19 and TypeScript
+- D3 for charts
+- Tailwind CSS 4
+- Lucide icons
+
+## Project structure
+
+```text
+src/
+  app/page.tsx        The dashboard page, filters and data loading
+  components/         One component per chart, plus filters and stat cards
+  lib/apiClient.ts    API calls and response types
+  lib/dataProcessor.ts  Helpers that reshape API data for the charts
 ```
-
-## 🛠️ Development
-
-### Adding New Charts
-1. Create component in `frontend/src/components/`
-2. Add data interface in `apiClient.ts`
-3. Create API endpoint in `backend/main.py`
-4. Import and use in main dashboard
-
-### Customizing Data Source
-- Replace `sample.csv` with your data file
-- Update data processing logic in `load_and_process_csv()`
-- Modify API endpoints to match your data structure
-
-## 📈 Performance Features
-
-- **Parallel API Calls** - All dashboard data loads simultaneously
-- **Efficient D3.js Rendering** - Optimized chart updates and transitions
-- **Responsive Design** - Adaptive layouts for all screen sizes
-- **Error Handling** - Comprehensive error states and recovery
-- **Type Safety** - Full TypeScript coverage prevents runtime errors
-
-## 🔐 Security & CORS
-
-The backend includes CORS middleware configured for local development. For production:
-
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://yourdomain.com"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
-```
-
-## 📝 License
-
-This project is built for demonstration purposes. Feel free to use and modify as needed.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
----
-
-**Built with ❤️ using React, FastAPI, D3.js, and TypeScript**
